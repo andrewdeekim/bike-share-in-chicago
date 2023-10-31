@@ -18,8 +18,7 @@ library(janitor)
 library(dplyr)  
 
 getwd() #displays your working directory
-#setwd("/Users/Andrew/Documents/cyclistic_data/") #set working directory to simplify calls to data
-setwd("/Users/andrewkim/Documents/cyclistic_data/") #set working directory to simplify calls to data
+setwd("../Documents/divvy-trip-data/") #set working directory to simplify calls to data
 
 #=====================
 # STEP 1: COLLECT DATA
@@ -99,14 +98,15 @@ is.factor(all_trips$ride_length)
 all_trips$ride_length <- as.numeric(as.character(all_trips$ride_length))
 is.numeric(all_trips$ride_length)
 
+# Converting ride_length from seconds to minutes
+all_trips$ride_minutes <- all_trips$ride_length/60
+glimpse(all_trips)
+
 # Remove "bad" data
 # The dataframe includes a few hundred entries where bikes were missing start/end station id and/or names or ride_length was negative
 # We will create a new version of the dataframe (v2) since data is being removed
 all_trips_v2 <- all_trips[!(is.na(all_trips$start_station_name) | is.na(all_trips$end_station_name) | is.na(all_trips$start_station_id) | is.na(all_trips$end_station_id) | all_trips$ride_length<0),]
 
-# Converting ride_length from seconds to minutes
-all_trips_v2$ride_minutes <- all_trips_v2$ride_length/60
-glimpse(all_trips_v2)
 
 # Creating trip_type variable indicating one-way or round-trip
 all_trips_v2 <- all_trips_v2 %>%
@@ -148,6 +148,7 @@ all_trips_v2 %>%
 #-------------------------
 # Visual Analysis
 #-------------------------
+#Day of the week vs. Number of Rides
 all_trips_v2 %>%
   mutate(weekday = wday(started_at, label = TRUE)) %>%
   group_by(member_casual, weekday) %>%
@@ -162,7 +163,7 @@ all_trips_v2 %>%
   mutate(weekday = wday(started_at, label = TRUE)) %>% 
   group_by(member_casual, weekday) %>% 
   summarise(number_of_rides = n()
-            ,average_duration = mean(ride_length)) %>% 
+            ,average_duration = mean(ride_minutes)) %>% 
   arrange(member_casual, weekday)  %>% 
   ggplot(aes(x = weekday, y = number_of_rides, fill = member_casual)) +
   geom_col(position = "dodge")
@@ -172,9 +173,19 @@ all_trips_v2 %>%
   mutate(weekday = wday(started_at, label = TRUE)) %>% 
   group_by(member_casual, weekday) %>% 
   summarise(number_of_rides = n()
-            ,average_duration = mean(ride_length)) %>% 
+            ,average_duration = mean(ride_minutes)) %>% 
   arrange(member_casual, weekday)  %>% 
   ggplot(aes(x = weekday, y = average_duration, fill = member_casual)) +
+  geom_col(position = "dodge")
+
+# Create a visualization for median duration
+all_trips_v2 %>% 
+  mutate(weekday = wday(started_at, label = TRUE)) %>% 
+  group_by(member_casual, weekday) %>% 
+  summarise(number_of_rides = n()
+            ,median_duration = median(ride_length)) %>% 
+  arrange(member_casual, weekday)  %>% 
+  ggplot(aes(x = weekday, y = median_duration, fill = member_casual)) +
   geom_col(position = "dodge")
 
 #=================================================
